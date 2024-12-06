@@ -12,6 +12,7 @@ export class CodeService {
       orderBy: {
         createdAt: 'desc',
       },
+      take: 5,
     });
   }
 
