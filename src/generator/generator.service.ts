@@ -24,8 +24,10 @@ export class GeneratorService {
   async checkCodeExpiry(code: any): Promise<boolean> {
     const expired = code.expiresAt < new Date();
 
-    // expired code, update status to EXPIRED
-    await this.codeService.update({ ...code, status: 'EXPIRED' });
+    if (expired) {
+      // expired code, update status to EXPIRED
+      await this.codeService.update({ ...code, status: 'EXPIRED' });
+    }
 
     return expired;
   }
@@ -61,7 +63,7 @@ export class GeneratorService {
     if (code) {
       const expired = await this.checkCodeExpiry(code);
       // check code expiry
-      if (expired) {
+      if (expired || code.status === 'USED') {
         // if expired code, generate a new one
         return this.generateCode(user.account);
       }
@@ -90,14 +92,14 @@ export class GeneratorService {
 
     const currentCode = codes[0];
 
+    if (currentCode.status === 'USED') {
+      throw new BadRequestException('Code already used');
+    }
+
     const expired = await this.checkCodeExpiry(currentCode);
 
     if (currentCode.status === 'EXPIRED' || expired) {
       throw new BadRequestException('Code expired');
-    }
-
-    if (currentCode.status === 'USED') {
-      throw new BadRequestException('Code already used');
     }
 
     await this.codeService.update({
